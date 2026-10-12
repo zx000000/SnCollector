@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SnCollector.App/SnCollector.App.csproj" />
+    <Project Path="src/SnCollector.Core/SnCollector.Core.csproj" />
+    <Project Path="src/SnSimulator/SnSimulator.csproj" />
+  </Folder>
+</Solution>

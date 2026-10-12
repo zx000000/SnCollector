@@ -1,0 +1,87 @@
+<UserControl x:Class="SnCollector.App.Views.ConfigView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="12">
+            <UniformGrid Columns="2">
+                <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="通讯参数" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="PLC IP 地址" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding PlcIp}"/>
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock Text="PLC 端口" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding PlcPort}"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="本机端口" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding LocalPort}"/>
+                            </StackPanel>
+                        </UniformGrid>
+                        <TextBlock Text="超时时间 (ms)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding Timeout}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="触发设置" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="触发接收通讯地址" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding TriggerAddress}"/>
+                        <TextBlock Text="PLC 置位该位时，按数据项配置依次读取" FontSize="11" Foreground="#64748B" Margin="0,-4,0,8"/>
+                        <TextBlock Text="轮询间隔 (ms)" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding PollInterval}"/>
+                        <CheckBox Content="读取完成后自动复位触发位" IsChecked="{Binding AutoReset}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="界面设置" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="实时列表最大行数" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding MaxListRows}"/>
+                        <TextBlock Text="1~2000，默认 200；超出后自动删除最旧行，历史数据不受影响" FontSize="11" Foreground="#64748B" Margin="0,-4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock Text="数据项配置" Style="{StaticResource CardTitle}" VerticalAlignment="Center"/>
+                        <Button Content="+ 添加数据项" Command="{Binding AddItemCommand}"
+                                HorizontalAlignment="Right" DockPanel.Dock="Right"/>
+                    </DockPanel>
+                    <DataGrid ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserAddRows="False" Height="220">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="数据项名称" Binding="{Binding Name}" Width="*"/>
+                            <DataGridComboBoxColumn Header="数据类型" Width="110"
+                                SelectedItemBinding="{Binding DataType}"
+                                ItemsSource="{Binding DataContext.DataTypes, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <DataGridTextColumn Header="起始地址" Binding="{Binding Address}" Width="110"/>
+                            <DataGridTextColumn Header="长度(字)" Binding="{Binding LengthWords}" Width="90"/>
+                            <DataGridTemplateColumn Header="操作" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="删除" Padding="8,3"
+                                            Command="{Binding DataContext.DeleteItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Text="扩展方式：增加第 3 个 SN 或其他数据（批次号、工位、NG 代码等），只需加一行并保存，无需改代码。"
+                               FontSize="11" Foreground="#64748B" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal">
+                <Button Content="保存配置" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}"/>
+                <Button Content="恢复默认" Command="{Binding ResetDefaultCommand}"/>
+                <Button Content="测试连接" Command="{Binding TestConnectionCommand}"/>
+            </StackPanel>
+            <TextBlock Text="配置保存在本机（%AppData%/SnCollector/config.json），下次启动自动加载。"
+                       FontSize="11" Foreground="#64748B" Margin="0,8,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
