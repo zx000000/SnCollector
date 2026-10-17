@@ -1,7 +1,9 @@
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Configuration;
 using SnCollector.Core.Models;
 using SnCollector.Core.Storage;
+using System.Text;
 
 namespace SnCollector.Core.Collectors;
 
@@ -118,20 +120,23 @@ public sealed class OpcUaCollector : ICollector
     private async Task ConnectAndSubscribeAsync(CancellationToken ct)
     {
         var cfg = Config.OpcUa;
-        var appConfig = await CreateApplicationConfigurationAsync().ConfigureAwait(false);
+        var appConfig = await CreateApplicationConfigurationAsync(ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
 
-        var endpointDesc = SelectEndpoint(cfg.EndpointUrl, cfg.SecurityPolicy);
+        var endpointDesc = await SelectEndpointAsync(appConfig, cfg.EndpointUrl, cfg.SecurityPolicy, ct).ConfigureAwait(false);
         var endpoint = new ConfiguredEndpoint(null, endpointDesc, EndpointConfiguration.Create(appConfig));
 
         IUserIdentity identity = string.IsNullOrWhiteSpace(cfg.Username)
             ? new UserIdentity(new AnonymousIdentityToken())
-            : new UserIdentity(cfg.Username, cfg.Password ?? string.Empty);
+            : new UserIdentity(cfg.Username, Encoding.UTF8.GetBytes(cfg.Password ?? string.Empty));
 
+        // Session.Create 在 1.5.x 被标记为过时但仍可用（新版推荐 ManagedSessionBuilder）；此处保持经典写法
+#pragma warning disable CS0618
         _session = await Session.Create(
             appConfig, endpoint, updateBeforeConnect: false,
             sessionName: "SnCollector", sessionTimeout: 60000, identity, preferredLocales: null)
             .ConfigureAwait(false);
+#pragma warning restore CS0618
         _session.KeepAlive += OnKeepAlive;
         ct.ThrowIfCancellationRequested();
 
@@ -213,11 +218,13 @@ public sealed class OpcUaCollector : ICollector
             bool ok = true;
             var items = cfg.Items;
 
-            var nodesToRead = items.Select(i => new ReadValueId
-            {
-                NodeId = NodeId.Parse(i.Address),
-                AttributeId = Attributes.Value
-            }).ToList();
+            var nodesToRead = new ReadValueIdCollection();
+            foreach (var i in items)
+                nodesToRead.Add(new ReadValueId
+                {
+                    NodeId = NodeId.Parse(i.Address),
+                    AttributeId = Attributes.Value
+                });
 
             // Session.Read 是同步阻塞调用，扔到线程池避免卡住订阅回调
             DataValueCollection results = await Task.Run(() =>
@@ -302,16 +309,20 @@ public sealed class OpcUaCollector : ICollector
         Session? session = null;
         try
         {
-            var appConfig = await CreateApplicationConfigurationAsync().ConfigureAwait(false);
-            var endpointDesc = SelectEndpoint(config.OpcUa.EndpointUrl, config.OpcUa.SecurityPolicy);
+            var appConfig = await CreateApplicationConfigurationAsync(CancellationToken.None).ConfigureAwait(false);
+            var endpointDesc = await SelectEndpointAsync(
+                appConfig, config.OpcUa.EndpointUrl, config.OpcUa.SecurityPolicy, CancellationToken.None)
+                .ConfigureAwait(false);
             var endpoint = new ConfiguredEndpoint(null, endpointDesc, EndpointConfiguration.Create(appConfig));
             IUserIdentity identity = string.IsNullOrWhiteSpace(config.OpcUa.Username)
                 ? new UserIdentity(new AnonymousIdentityToken())
-                : new UserIdentity(config.OpcUa.Username, config.OpcUa.Password ?? string.Empty);
+                : new UserIdentity(config.OpcUa.Username, Encoding.UTF8.GetBytes(config.OpcUa.Password ?? string.Empty));
+#pragma warning disable CS0618 // Session.Create 在 1.5.x 被标记为过时但仍可用
             session = await Session.Create(
                 appConfig, endpoint, updateBeforeConnect: false,
                 sessionName: "SnCollector-Test", sessionTimeout: 15000, identity, preferredLocales: null)
                 .ConfigureAwait(false);
+#pragma warning restore CS0618
             return session.Connected;
         }
         catch
@@ -328,12 +339,16 @@ public sealed class OpcUaCollector : ICollector
         }
     }
 
-    /// <summary>按配置的安全策略挑选 Endpoint</summary>
-    private static EndpointDescription SelectEndpoint(string endpointUrl, string securityPolicy)
+    /// <summary>按配置的安全策略挑选 Endpoint（1.5.x 异步发现 API）</summary>
+    private static async Task<EndpointDescription> SelectEndpointAsync(
+        ApplicationConfiguration appConfig, string endpointUrl, string securityPolicy, CancellationToken ct)
     {
         bool useSecurity = !string.Equals(securityPolicy, "None", StringComparison.OrdinalIgnoreCase);
         // 先按是否加密做初选，再强制指定安全策略与模式
-        var endpoint = CoreClientUtils.SelectEndpoint(endpointUrl, useSecurity, operationTimeout: 15000);
+        var selected = await CoreClientUtils
+            .SelectEndpointAsync(appConfig, endpointUrl, useSecurity, null!, ct)
+            .ConfigureAwait(false);
+        var endpoint = selected ?? throw new Exception($"无法从 {endpointUrl} 发现可用端点");
         endpoint.SecurityPolicyUri = securityPolicy switch
         {
             "Basic256Sha256" => SecurityPolicies.Basic256Sha256,
@@ -349,9 +364,9 @@ public sealed class OpcUaCollector : ICollector
     /// 构建客户端应用配置（含自签名证书；首次运行自动生成）。
     /// AutoAcceptUntrustedCertificates=true：开发调试便利，生产环境建议关闭并手动信任 Server 证书。
     /// </summary>
-    private static async Task<ApplicationConfiguration> CreateApplicationConfigurationAsync()
+    private static async Task<ApplicationConfiguration> CreateApplicationConfigurationAsync(CancellationToken ct)
     {
-        var config = new ApplicationConfiguration
+        var config = new ApplicationConfiguration(null)
         {
             ApplicationName = "SnCollector",
             ApplicationUri = $"urn:{Environment.MachineName}:SnCollector:OpcUaClient",
@@ -381,8 +396,13 @@ public sealed class OpcUaCollector : ICollector
             ClientConfiguration = new ClientConfiguration { DefaultSessionTimeout = 60000 }
         };
 
-        await config.ValidateAsync(ApplicationType.Client).ConfigureAwait(false);
-        bool haveCert = await config.CheckApplicationInstanceCertificateAsync(silent: false, keySize: 2048).ConfigureAwait(false);
+        await config.ValidateAsync(ApplicationType.Client, ct).ConfigureAwait(false);
+
+        // 1.5.x：应用证书自检/自建收归 ApplicationInstance（旧的 config.CheckApplicationInstanceCertificateAsync 已移除）
+        var appInstance = new ApplicationInstance(config, null);
+        bool haveCert = await appInstance
+            .CheckApplicationInstanceCertificatesAsync(silent: false, ct: ct)
+            .ConfigureAwait(false);
         if (!haveCert)
             throw new Exception("无法创建 OPC UA 应用证书");
         return config;
