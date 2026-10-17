@@ -1,3 +1,4 @@
+using SnCollector.Core.Collectors;
 using SnCollector.Core.Fins;
 using SnCollector.Core.Models;
 using SnCollector.Core.Storage;
@@ -5,14 +6,18 @@ using SnCollector.Core.Storage;
 namespace SnCollector.Core.Services;
 
 /// <summary>
-/// 采集服务：轮询触发位，上升沿/置位时按数据项配置依次读取，入库并抛事件。
+/// FINS/UDP 协议采集器：轮询触发位，上升沿/置位时按数据项配置依次读取，入库并抛事件。
+/// 实现 <see cref="ICollector"/> 接口，UI 层通过接口与之交互。
 /// </summary>
-public sealed class CollectorService : IDisposable
+public sealed class CollectorService : ICollector
 {
     private readonly RecordStore _store = new();
     private FinsUdpClient? _fins;
     private CancellationTokenSource? _cts;
     private Task? _loopTask;
+
+    public string ProtocolName => "FINS";
+    public string ServerAddress => $"{Config.Plc.IpAddress}:{Config.Plc.PlcPort}";
 
     public AppConfig Config { get; private set; } = ConfigStore.Load();
 
@@ -34,10 +39,11 @@ public sealed class CollectorService : IDisposable
         Config = config;
     }
 
-    public void Start()
+    public void Start(AppConfig config)
     {
         if (IsRunning) return;
-        var c = Config;
+        Config = config;
+        var c = config;
         _fins = new FinsUdpClient(c.Plc.IpAddress, c.Plc.PlcPort, c.Plc.LocalPort, c.Plc.TimeoutMs);
         _cts = new CancellationTokenSource();
         StartedAt = DateTime.Now;
@@ -123,9 +129,9 @@ public sealed class CollectorService : IDisposable
         RecordReceived?.Invoke(record);
     }
 
-    public async Task<bool> TestConnectionAsync()
+    public async Task<bool> TestConnectionAsync(AppConfig config)
     {
-        var c = Config;
+        var c = config;
         try
         {
             using var fins = new FinsUdpClient(c.Plc.IpAddress, c.Plc.PlcPort, c.Plc.LocalPort, c.Plc.TimeoutMs);

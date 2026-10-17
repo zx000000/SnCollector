@@ -19,7 +19,10 @@ public class DataItemConfig
 
     public DataItemType DataType { get; set; } = DataItemType.Ascii;
 
-    /// <summary>DM 区字地址，如 D200</summary>
+    /// <summary>
+    /// 数据地址：FINS 协议下为 DM 区字地址（如 D200）；
+    /// OPC UA 协议下为节点 NodeId（如 ns=2;s=SN1）。
+    /// </summary>
     public string Address { get; set; } = "D200";
 
     /// <summary>长度（字）。ASCII 按 1 字=2 字符换算。</summary>

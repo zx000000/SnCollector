@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SnCollector.Core.Collectors;
 using SnCollector.Core.Models;
-using SnCollector.Core.Services;
 using SnCollector.Core.Storage;
 using System.Data;
 using System.Windows;
@@ -12,7 +12,7 @@ namespace SnCollector.App.ViewModels;
 /// <summary>运行监视页：连接状态、运行信息、实时数据列表（列随数据项配置动态生成）</summary>
 public partial class MonitorViewModel : ObservableObject, IDisposable
 {
-    private readonly CollectorService _service;
+    private readonly ICollector _service;
     private readonly RecordStore _store = new();
     private readonly DispatcherTimer _uiTimer;
     private DataTable _table = new();
@@ -29,7 +29,7 @@ public partial class MonitorViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _lastError = "";
     [ObservableProperty] private DataView? _recordsView;
 
-    public MonitorViewModel(CollectorService service)
+    public MonitorViewModel(ICollector service)
     {
         _service = service;
         RebuildColumns();
@@ -40,7 +40,7 @@ public partial class MonitorViewModel : ObservableObject, IDisposable
             if (c) LastError = "";
         };
         _service.ErrorOccurred += OnErrorOccurred;
-        PlcAddress = $"{service.Config.Plc.IpAddress}:{service.Config.Plc.PlcPort}";
+        PlcAddress = service.ServerAddress;
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshStats();
@@ -110,8 +110,8 @@ public partial class MonitorViewModel : ObservableObject, IDisposable
         {
             _service.ReloadConfig();
             RebuildColumns();
-            PlcAddress = $"{_service.Config.Plc.IpAddress}:{_service.Config.Plc.PlcPort}";
-            _service.Start();
+            PlcAddress = _service.ServerAddress;
+            _service.Start(_service.Config);
             IsRunning = true;
         }
     }

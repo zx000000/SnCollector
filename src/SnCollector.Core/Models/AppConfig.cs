@@ -12,7 +12,10 @@ public class PlcCommConfig
 /// <summary>触发设置</summary>
 public class TriggerConfig
 {
-    /// <summary>触发位地址，如 D100.00。PLC 置位后开始一次采集。</summary>
+    /// <summary>
+    /// 触发源：FINS 协议下为触发位地址（如 D100.00），PLC 置位后开始一次采集；
+    /// OPC UA 协议下为触发节点的 NodeId（如 ns=2;s=Trigger），通过订阅推送触发。
+    /// </summary>
     public string TriggerAddress { get; set; } = "D100.00";
 
     /// <summary>轮询间隔（ms）</summary>
@@ -32,7 +35,11 @@ public class DisplayConfig
 /// <summary>应用总配置，JSON 落盘，下次启动自动加载</summary>
 public class AppConfig
 {
+    /// <summary>采集协议，决定使用哪种采集器实现</summary>
+    public ProtocolType Protocol { get; set; } = ProtocolType.Fins;
+
     public PlcCommConfig Plc { get; set; } = new();
+    public OpcUaConfig OpcUa { get; set; } = new();
     public TriggerConfig Trigger { get; set; } = new();
     public DisplayConfig Display { get; set; } = new();
     public List<DataItemConfig> Items { get; set; } = new()

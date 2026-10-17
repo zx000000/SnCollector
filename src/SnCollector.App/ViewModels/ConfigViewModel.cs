@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SnCollector.Core.Collectors;
 using SnCollector.Core.Models;
-using SnCollector.Core.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -10,7 +10,7 @@ namespace SnCollector.App.ViewModels;
 /// <summary>参数配置页：通讯参数 + 触发设置 + 数据项配置表，保存落盘本地</summary>
 public partial class ConfigViewModel : ObservableObject
 {
-    private readonly CollectorService _service;
+    private readonly ICollector _service;
 
     [ObservableProperty] private string _plcIp = "";
     [ObservableProperty] private string _plcPort = "";
@@ -24,7 +24,7 @@ public partial class ConfigViewModel : ObservableObject
 
     public Array DataTypes => Enum.GetValues(typeof(DataItemType));
 
-    public ConfigViewModel(CollectorService service)
+    public ConfigViewModel(ICollector service)
     {
         _service = service;
         LoadFrom(service.Config);
@@ -119,7 +119,7 @@ public partial class ConfigViewModel : ObservableObject
         try
         {
             // 先用当前输入框的值临时测试
-            var ok = await _service.TestConnectionAsync();
+            var ok = await _service.TestConnectionAsync(_service.Config);
             MessageBox.Show(ok ? "PLC 连接正常。" : "连接失败，请检查 IP/端口与网络。",
                 "测试连接", MessageBoxButton.OK, ok ? MessageBoxImage.Information : MessageBoxImage.Error);
         }
