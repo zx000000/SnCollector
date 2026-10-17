@@ -67,7 +67,7 @@
                             <DataGridTextColumn Header="数据项名称" Binding="{Binding Name}" Width="*"/>
                             <DataGridComboBoxColumn Header="数据类型" Width="110"
                                 SelectedItemBinding="{Binding DataType}"
-                                ItemsSource="{StaticResource DataItemTypes}"/>
+                                ItemsSource="{Binding Source={StaticResource DataItemTypes}}"/>
                             <DataGridTextColumn Header="起始地址" Binding="{Binding Address}" Width="110"/>
                             <DataGridTextColumn Header="长度(字)" Binding="{Binding LengthWords}" Width="90"/>
                             <DataGridTemplateColumn Header="操作" Width="80">
