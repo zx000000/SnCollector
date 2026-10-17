@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <!-- OPC UA 官方协议栈；1.5.* 浮动版本，恢复时自动取最新 1.5.x -->
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.*" />
   </ItemGroup>
 
 </Project>

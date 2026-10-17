@@ -25,7 +25,7 @@
                 </Border>
                 <Border Style="{StaticResource Card}" Margin="0,0,8,0">
                     <StackPanel>
-                        <TextBlock Text="PLC 地址" Style="{StaticResource FieldLabel}"/>
+                        <TextBlock Text="服务器地址" Style="{StaticResource FieldLabel}"/>
                         <TextBlock Text="{Binding PlcAddress}" FontSize="14" FontWeight="Bold" FontFamily="Consolas"/>
                     </StackPanel>
                 </Border>

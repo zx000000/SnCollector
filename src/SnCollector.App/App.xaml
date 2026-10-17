@@ -5,6 +5,7 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style TargetType="TabControl">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="4"/>

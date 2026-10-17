@@ -12,7 +12,7 @@ public static class CollectorFactory
     public static ICollector Create(ProtocolType protocol) => protocol switch
     {
         ProtocolType.Fins => new CollectorService(),
-        ProtocolType.OpcUa => throw new NotSupportedException("OPC UA 采集器正在开发中，敬请期待"),
+        ProtocolType.OpcUa => new OpcUaCollector(),
         _ => throw new ArgumentOutOfRangeException(nameof(protocol), $"未知协议类型: {protocol}"),
     };
 

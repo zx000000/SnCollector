@@ -13,8 +13,18 @@
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="12">
+            <Border Style="{StaticResource Card}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="采集协议" Style="{StaticResource CardTitle}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <ComboBox ItemsSource="{Binding ProtocolChoices}" DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedProtocol}" Width="180" Margin="0"/>
+                    <TextBlock Text="切换协议后需重启应用生效" FontSize="11" Foreground="#64748B"
+                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                </StackPanel>
+            </Border>
             <UniformGrid Columns="2">
-                <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                <Border Style="{StaticResource Card}" Margin="0,0,8,0"
+                        Visibility="{Binding IsFins, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
                         <TextBlock Text="通讯参数" Style="{StaticResource CardTitle}"/>
                         <TextBlock Text="PLC IP 地址" Style="{StaticResource FieldLabel}"/>
@@ -33,14 +43,47 @@
                         <TextBox Text="{Binding Timeout}"/>
                     </StackPanel>
                 </Border>
+                <Border Style="{StaticResource Card}" Margin="0,0,8,0"
+                        Visibility="{Binding IsOpcUa, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="OPC UA 连接参数" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="服务器 Endpoint" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding OpcEndpoint}"/>
+                        <TextBlock Text="安全策略" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding SecurityPolicyOptions}" SelectedItem="{Binding OpcSecurityPolicy}"/>
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock Text="用户名（匿名留空）" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding OpcUsername}"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="密码" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding OpcPassword}"/>
+                            </StackPanel>
+                        </UniformGrid>
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock Text="发布间隔 (ms)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding OpcPublishInterval}"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="采样间隔 (ms)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding OpcSamplingInterval}"/>
+                            </StackPanel>
+                        </UniformGrid>
+                        <TextBlock Text="密码明文保存在本地配置文件中，请注意保管" FontSize="11" Foreground="#64748B" Margin="0,-4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
                         <TextBlock Text="触发设置" Style="{StaticResource CardTitle}"/>
                         <TextBlock Text="触发接收通讯地址" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding TriggerAddress}"/>
-                        <TextBlock Text="PLC 置位该位时，按数据项配置依次读取" FontSize="11" Foreground="#64748B" Margin="0,-4,0,8"/>
-                        <TextBlock Text="轮询间隔 (ms)" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding PollInterval}"/>
+                        <TextBlock Text="FINS 填位地址（如 D100.00）；OPC UA 填触发节点的 NodeId（如 ns=2;s=Trigger）" FontSize="11" Foreground="#64748B" Margin="0,-4,0,8" TextWrapping="Wrap"/>
+                        <StackPanel Visibility="{Binding IsFins, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="轮询间隔 (ms)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding PollInterval}"/>
+                        </StackPanel>
                         <CheckBox Content="读取完成后自动复位触发位" IsChecked="{Binding AutoReset}" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
@@ -81,7 +124,7 @@
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <TextBlock Text="扩展方式：增加第 3 个 SN 或其他数据（批次号、工位、NG 代码等），只需加一行并保存，无需改代码。"
+                    <TextBlock Text="起始地址：FINS 填 DM 区地址（如 D200）；OPC UA 填节点 NodeId（如 ns=2;s=SN1）。扩展数据项（批次号、工位、NG 代码等）只需加一行并保存，无需改代码。"
                                FontSize="11" Foreground="#64748B" Margin="0,8,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
