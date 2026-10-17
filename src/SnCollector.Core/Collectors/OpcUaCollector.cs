@@ -366,7 +366,7 @@ public sealed class OpcUaCollector : ICollector
     /// </summary>
     private static async Task<ApplicationConfiguration> CreateApplicationConfigurationAsync(CancellationToken ct)
     {
-        var config = new ApplicationConfiguration(null)
+        var config = new ApplicationConfiguration((ITelemetryContext)null)
         {
             ApplicationName = "SnCollector",
             ApplicationUri = $"urn:{Environment.MachineName}:SnCollector:OpcUaClient",
